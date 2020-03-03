@@ -603,19 +603,19 @@ class CallGraphVisitor(ast.NodeVisitor):
             self.analyze_binding(targets, values)
 
     def visit_AnnAssign(self, node):  # PEP 526, Python 3.6+
-        target = sanitize_exprs(node.target)
+        targets = sanitize_exprs(node.target)
         self.last_value = None
         if node.value is not None:
-            value = sanitize_exprs(node.value)
-            self.logger.debug("AnnAssign %s %s, %s:%s" % (get_ast_node_name(target[0]),
-                                                          get_ast_node_name(value[0]),
+            values = sanitize_exprs(node.value)
+            self.logger.debug("AnnAssign %s %s, %s:%s" % ([get_ast_node_name(x) for x in targets],
+                                                          [get_ast_node_name(x) for x in values],
                                                           self.filename, node.lineno))
-            self.analyze_binding(target, value)
+            self.analyze_binding(targets, values)
         else:  # just a type declaration
-            self.logger.debug("AnnAssign %s <no value>, %s:%s" % (get_ast_node_name(target[0]),
+            self.logger.debug("AnnAssign %s <no value>, %s:%s" % ([get_ast_node_name(x) for x in targets],
                                                                   self.filename, node.lineno))
             self.last_value = None
-            self.visit(target[0])
+            self.visit(targets[0])
         # TODO: use the type annotation from node.annotation?
         # http://greentreesnakes.readthedocs.io/en/latest/nodes.html#AnnAssign
 
@@ -811,7 +811,7 @@ class CallGraphVisitor(ast.NodeVisitor):
         or None if not applicable; and flavor is a Flavor, specifically one of
         FUNCTION, METHOD, STATICMETHOD or CLASSMETHOD."""
 
-        if not isinstance(ast_node, ast.FunctionDef):
+        if not isinstance(ast_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             raise TypeError("Expected ast.FunctionDef; got %s" % (type(ast_node)))
 
         # Visit decorators
